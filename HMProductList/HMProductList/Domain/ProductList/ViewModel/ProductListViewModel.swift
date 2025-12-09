@@ -16,43 +16,42 @@ final class ProductListViewModel {
     private(set) var isLoading = false
     private(set) var errorMessage: String?
     private(set) var hasMorePages = true
-    
+
     let repository: ProductRepository
-    private var currentPage = 0
-    private let searchQuery = "jeans"
-    
+    private var currentPage = 1
+
     // Prevent duplicate pagination requests
     private var isPaginationInProgress = false
-    
+
     // MARK: - Initialization
     init(repository: ProductRepository) {
         self.repository = repository
     }
-    
+
     // MARK: - Public Methods
-    
     /// Load initial products
     func loadProducts() async {
         guard !isLoading else { return }
-        
+
         isLoading = true
         errorMessage = nil
-        currentPage = 1
-        
+
         do {
-            let result = try await repository.searchProducts(query: searchQuery, page: currentPage)
-            products = result.products
-            hasMorePages = result.pagination.hasMore
-            
-            print("Loaded \(result.products.count) products (Page \(currentPage)/\(result.pagination.totalPages))")
+            let newProducts = try await repository.fetchProducts(page: currentPage)
+
+            if newProducts.isEmpty {
+                hasMorePages = false
+            } else {
+                products.append(contentsOf: newProducts)
+                currentPage += 1
+            }
         } catch {
-            errorMessage = error.localizedDescription
-            print("Error loading products: \(error)")
+            self.errorMessage = error.localizedDescription
         }
-        
+
         isLoading = false
     }
-    
+
     /// Load next page (pagination)
     func loadMoreIfNeeded(currentProduct product: Product) async {
         // Trigger pagination when user reaches near the end
@@ -63,35 +62,38 @@ final class ProductListViewModel {
               !isLoading else {
             return
         }
-        
+
         await loadNextPage()
     }
-    
+
     /// Refresh (pull to refresh)
     func refresh() async {
         products = []
-        currentPage = 0
+        currentPage = 1
         hasMorePages = true
+        errorMessage = nil
         await loadProducts()
     }
-    
-    // MARK: - Private Methods
-    private func loadNextPage() async {
+
+    func loadNextPage() async {
         isPaginationInProgress = true
-        currentPage += 1
-        
+
         do {
-            let result = try await repository.searchProducts(query: searchQuery, page: currentPage)
-            products.append(contentsOf: result.products)
-            hasMorePages = result.pagination.hasMore
-            
-            print("Loaded page \(currentPage): \(result.products.count) more products")
+            let newProducts = try await repository.fetchProducts(page: currentPage)
+
+            if newProducts.isEmpty {
+                hasMorePages = false
+            } else {
+                products.append(contentsOf: newProducts)
+                currentPage += 1
+            }
+
+            print("Loaded page \(currentPage - 1): \(newProducts.count) more products")
         } catch {
             errorMessage = error.localizedDescription
-            currentPage -= 1 // Revert page increment on error
             print("Error loading more products: \(error)")
         }
-        
+
         isPaginationInProgress = false
     }
 }

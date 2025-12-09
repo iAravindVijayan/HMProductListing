@@ -23,13 +23,14 @@ public struct Endpoint {
 
 // MARK: - API Endpoints
 public extension Endpoint {
-    static func searchProducts(query: String, page: Int) -> Endpoint {
-        return Endpoint(
+    static func products(page: Int) -> Endpoint {
+        Endpoint(
             path: "/search-services/v1/sv_se/search/resultpage",
             queryItems: [
+                URLQueryItem(name: "query", value: "jeans"),
                 URLQueryItem(name: "touchPoint", value: "ios"),
-                URLQueryItem(name: "query", value: query),
-                URLQueryItem(name: "page", value: "\(page)")
+                URLQueryItem(name: "currentPage", value: "\(page)"),
+                URLQueryItem(name: "pageSize", value: "20")
             ]
         )
     }

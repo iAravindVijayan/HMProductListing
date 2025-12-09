@@ -11,7 +11,7 @@ import SwiftUI
 
 // MARK: - Repository Protocol
 protocol ProductRepository {
-    func searchProducts(query: String, page: Int) async throws -> (products: [Product], pagination: Pagination)
+    func fetchProducts(page: Int) async throws -> [Product]
     func loadImage(from url: String) async -> Image?
 }
 

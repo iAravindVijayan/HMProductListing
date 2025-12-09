@@ -14,6 +14,7 @@ struct ProductListView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
+    // MARK: - Computed Properties
     // Adaptive columns based on orientation
     private var columns: [GridItem] {
         let isLandscape = verticalSizeClass == .compact ||
@@ -22,6 +23,7 @@ struct ProductListView: View {
         return Array(repeating: GridItem(.flexible(), spacing: 16), count: columnCount)
     }
 
+    // MARK: - Body
     var body: some View {
         NavigationView {
             ZStack {
@@ -33,8 +35,8 @@ struct ProductListView: View {
                     // Initial loading
                     ProgressView()
                         .accessibilityLabel(UIStrings.loadingProducts.localized)
-                } else if let error = viewModel.errorMessage {
-                    // Error state
+                } else if let error = viewModel.errorMessage, viewModel.products.isEmpty {
+                    // Error state (only show when no products loaded)
                     ErrorView(message: error) {
                         Task {
                             await viewModel.loadProducts()
@@ -42,31 +44,7 @@ struct ProductListView: View {
                     }
                 } else {
                     // Product grid
-                    ScrollView {
-                        LazyVGrid(columns: columns, spacing: 16) {
-                            ForEach(viewModel.products) { product in
-                                ProductCardView(product: product, repository: viewModel.repository)
-                                    .onAppear {
-                                        // Pagination trigger
-                                        Task {
-                                            await viewModel.loadMoreIfNeeded(currentProduct: product)
-                                        }
-                                    }
-                            }
-
-                            // Loading indicator for pagination
-                            if viewModel.isLoading {
-                                ProgressView()
-                                    .gridCellColumns(columns.count)
-                                    .padding()
-                                    .accessibilityLabel(UIStrings.loadingMoreProducts.localized)
-                            }
-                        }
-                        .padding()
-                    }
-                    .refreshable {
-                        await viewModel.refresh()
-                    }
+                    productGridView
                 }
             }
             .navigationTitle(UIStrings.productListTile.localized)
@@ -78,6 +56,67 @@ struct ProductListView: View {
             }
         }
         .navigationViewStyle(.stack)
+    }
+
+    // MARK: - Subviews
+    private var productGridView: some View {
+        ScrollView {
+            LazyVGrid(columns: columns, spacing: 16) {
+                ForEach(viewModel.products) { product in
+                    ProductCardView(product: product, repository: viewModel.repository)
+                        .onAppear {
+                            // Pagination trigger
+                            Task {
+                                await viewModel.loadMoreIfNeeded(currentProduct: product)
+                            }
+                        }
+                }
+
+                // Loading indicator for pagination
+                if viewModel.isLoading {
+                    ProgressView()
+                        .gridCellColumns(columns.count)
+                        .padding()
+                        .accessibilityLabel(UIStrings.loadingMoreProducts.localized)
+                }
+
+                // Error banner for pagination errors (non-blocking)
+                if let error = viewModel.errorMessage, !viewModel.products.isEmpty {
+                    paginationErrorBanner(error)
+                }
+            }
+            .padding()
+        }
+        .refreshable {
+            await viewModel.refresh()
+        }
+    }
+
+    private func paginationErrorBanner(_ message: String) -> some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 12) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(.orange)
+
+                Text(message)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Spacer()
+
+                Button(UIStrings.retry.localized) {
+                    Task {
+                        await viewModel.loadNextPage()
+                    }
+                }
+                .font(.caption.weight(.semibold))
+            }
+            .padding()
+            .background(Color.orange.opacity(0.1))
+            .cornerRadius(8)
+        }
+        .gridCellColumns(columns.count)
+        .padding(.horizontal)
     }
 }
 
@@ -100,7 +139,7 @@ struct ErrorView: View {
                 .padding(.horizontal)
 
             Button(action: retryAction) {
-                Text(UIStrings.cancel.localized)
+                Text(UIStrings.retry.localized)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
                     .frame(maxWidth: 200)
@@ -113,31 +152,4 @@ struct ErrorView: View {
         }
         .padding()
     }
-}
-
-// MARK: - Preview
-#Preview("Product List") {
-    ProductListView(
-        viewModel: ProductListViewModel(
-            repository: MockProductRepository()
-        )
-    )
-}
-
-#Preview("Loading State") {
-    ProductListView(
-        viewModel: {
-            let vm = ProductListViewModel(repository: MockProductRepository())
-            return vm
-        }()
-    )
-}
-
-#Preview("Dark Mode") {
-    ProductListView(
-        viewModel: ProductListViewModel(
-            repository: MockProductRepository()
-        )
-    )
-    .preferredColorScheme(.dark)
 }

@@ -12,8 +12,8 @@ import SwiftUI
 import Foundation
 import NetworkEngine
 
-final class ImageCacheManager: @unchecked Sendable {
-    static let shared = ImageCacheManager()
+public final class ImageCacheManager: @unchecked Sendable {
+    public static let shared = ImageCacheManager()
 
     // Memory cache - stores decoded UIImage for fast access
     private let memoryCache = NSCache<NSString, UIImage>()
@@ -53,7 +53,7 @@ final class ImageCacheManager: @unchecked Sendable {
     }
 
     // Returns SwiftUI Image for views
-    func loadImage(from urlString: String) async -> Image? {
+    public func loadImage(from urlString: String) async -> Image? {
         let cacheKey = urlString as NSString
 
         // Step 1: Check memory cache (fastest - decoded UIImage)

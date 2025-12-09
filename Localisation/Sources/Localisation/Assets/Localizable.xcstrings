@@ -120,7 +120,7 @@
         }
       }
     },
-    "general.retryButton" : {
+    "general.retry" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {

@@ -6,12 +6,21 @@
 //
 
 import SwiftUI
+import NetworkEngine
+import CacheManager
 
 @main
 struct HMProductListApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ProductListView(
+                viewModel: ProductListViewModel(
+                    repository: DefaultProductRepository(
+                        networkService: DefaultNetworkService(),
+                        imageCache: ImageCacheManager.shared
+                    )
+                )
+            )
         }
     }
 }

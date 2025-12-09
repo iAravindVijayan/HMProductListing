@@ -27,45 +27,51 @@ struct Product: Identifiable, Equatable {
 }
 
 // MARK: - API Response Models
-struct ProductSearchResponse: Decodable {
+struct ProductSearchResponse: Codable {
+    let searchHits: SearchHits
+}
+
+struct SearchHits: Codable {
     let productList: [ProductDTO]
-    let pagination: Pagination
-    
+}
+
+// MARK: - Product DTO
+struct ProductDTO: Codable {
+    let id: String
+    let productName: String
+    let brandName: String
+    let prices: [PriceInfo]
+    let productImage: String
+    let url: String?
+
     enum CodingKeys: String, CodingKey {
-        case productList, pagination
+        case id
+        case productName
+        case brandName
+        case prices
+        case productImage
+        case url
     }
 }
 
-struct ProductDTO: Decodable {
-    let articleCode: String
-    let title: String
-    let price: String
-    let image: String
-    let brandName: String?
-    let collectionName: String?
-    
-    enum CodingKeys: String, CodingKey {
-        case articleCode, title, price, image, brandName, collectionName
-    }
-    
+struct PriceInfo: Codable {
+    let price: Double
+    let formattedPrice: String
+}
+
+// MARK: - Domain Conversion
+extension ProductDTO {
     func toDomain() -> Product {
-        return Product(
-            id: articleCode,
-            title: title,
-            price: price,
-            imageURL: image,
-            brandName: brandName,
-            collectionName: collectionName
-        )
-    }
-}
+        let priceValue = prices.first?.price ?? 0.0
+        let formattedPrice = prices.first?.formattedPrice ?? String(format: "%.2f kr", priceValue)
 
-struct Pagination: Decodable {
-    let currentPage: Int
-    let totalPages: Int
-    let totalResults: Int
-    
-    var hasMore: Bool {
-        return currentPage < totalPages
+        return Product(
+            id: id,
+            title: productName,
+            price: formattedPrice,
+            imageURL: productImage,
+            brandName: brandName,
+            collectionName: nil
+        )
     }
 }
