@@ -27,7 +27,7 @@ struct ProductCardView: View {
                 if let image = image {
                     image
                         .resizable()
-                        .aspectRatio(contentMode: .fit)
+                        .aspectRatio(contentMode: .fill)
                         .accessibilityLabel(product.accessibilityImageLabel)
                 } else if isLoading {
                     ProgressView()

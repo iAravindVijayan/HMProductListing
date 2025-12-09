@@ -101,7 +101,6 @@ public final class ImageCacheManager: @unchecked Sendable {
             }
 
 
-            // Use NetworkService instead of URLSession directly
             guard let data = try? await self.networkService.downloadData(from: url),
                   let uiImage = await self.decodeUIImage(from: data) else {
                 return nil
