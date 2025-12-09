@@ -17,27 +17,27 @@ public protocol NetworkService {
 public final class DefaultNetworkService: NetworkService {
     private let session: URLSession
     private let decoder: JSONDecoder
-
+    
     public init(session: URLSession = .shared, decoder: JSONDecoder = JSONDecoder()) {
         self.session = session
         self.decoder = decoder
     }
-
+    
     public func request<T: Decodable>(_ endpoint: Endpoint) async throws -> T {
         guard let url = endpoint.url else {
             throw NetworkError.invalidURL
         }
-
+        
         let (data, response) = try await session.data(from: url)
-
+        
         guard let httpResponse = response as? HTTPURLResponse else {
             throw NetworkError.invalidResponse
         }
-
+        
         guard (200...299).contains(httpResponse.statusCode) else {
             throw NetworkError.httpError(statusCode: httpResponse.statusCode)
         }
-
+        
         do {
             let decoded = try decoder.decode(T.self, from: data)
             return decoded
@@ -49,15 +49,15 @@ public final class DefaultNetworkService: NetworkService {
             throw NetworkError.decodingError(error)
         }
     }
-
+    
     public func downloadData(from url: URL) async throws -> Data {
         let (data, response) = try await session.data(from: url)
-
+        
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {
             throw NetworkError.invalidResponse
         }
-
+        
         return data
     }
 }
@@ -70,7 +70,7 @@ public enum NetworkError: LocalizedError {
     case httpError(statusCode: Int)
     case decodingError(Error)
     case noData
-
+    
     public var errorDescription: String? {
         switch self {
         case .invalidURL:

@@ -16,6 +16,18 @@ public enum UIStrings: String {
 
     //MARK: General
     case ok = "general.ok"
+    case retry = "general.retry"
+    case retryHint = "general.retryHint"
+    case cancel = "general.cancel"
+
+    //MARK: ProductList
+    case productImage = "productList.productImage"
+    case cardHint = "productList.cardHint"
+    case imageUnavailable = "productList.imageUnavaiable"
+    case loadingImage = "productList.loadingImage"
+    case loadingMoreProducts = "productList.loadingMoreProducts"
+    case loadingProducts = "productList.loadingProducts"
+    case productListTile = "productList.title"
 
     public var localized: String {
         self.rawValue.localized
