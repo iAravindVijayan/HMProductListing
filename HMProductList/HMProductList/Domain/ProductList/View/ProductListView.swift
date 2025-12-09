@@ -97,13 +97,9 @@ struct ProductListView: View {
                 .id("pagination-trigger")
                 .gridCellColumns(columns.count)
                 .onAppear {
-                    print("Pagination trigger appeared")
                     Task {
                         await viewModel.loadMoreProductsIfNeeded()
                     }
-                }
-                .onDisappear {
-                    print("Pagination trigger disappeared")
                 }
         }
     }

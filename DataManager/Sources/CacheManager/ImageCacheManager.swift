@@ -51,20 +51,13 @@ public final class ImageCacheManager: @unchecked Sendable {
     @objc private func handleMemoryWarning() {
         memoryCacheQueue.async(flags: .barrier) { [weak self] in
             self?.memoryCache.removeAllObjects()
-            print("Memory cache cleared due to memory warning")
         }
     }
 
     // Thread-safe memory cache access
     private func getCachedData(forKey key: String) -> Data? {
-        return memoryCacheQueue.sync {
-            let cached = memoryCache.object(forKey: key as NSString) as Data?
-            if cached != nil {
-                print("Memory cache HIT: \(key)")
-            } else {
-                print("Memory cache MISS: \(key)")
-            }
-            return cached
+        memoryCacheQueue.sync {
+            memoryCache.object(forKey: key as NSString) as Data?
         }
     }
 
@@ -73,14 +66,11 @@ public final class ImageCacheManager: @unchecked Sendable {
         memoryCacheQueue.sync(flags: .barrier) { [weak self] in
             guard let self = self else { return }
             self.memoryCache.setObject(data as NSData, forKey: key as NSString, cost: data.count)
-            print("Stored in memory cache: \(key) (cost: \(data.count) bytes)")
         }
     }
 
     // Returns SwiftUI Image for views
     public func loadImage(from urlString: String) async -> Image? {
-        print("Loading image: \(urlString)")
-
         // Step 1: Check memory cache for compressed data
         if let cachedData = getCachedData(forKey: urlString),
            let uiImage = await decodeUIImage(from: cachedData) {
@@ -90,7 +80,6 @@ public final class ImageCacheManager: @unchecked Sendable {
         // Step 2: Check disk cache
         if let data = await diskCache.data(forKey: urlString),
            let uiImage = await decodeUIImage(from: data) {
-            print("Image found in diskCache: \(urlString)")
             // Promote to memory cache
             cacheData(data, forKey: urlString)
             return Image(uiImage: uiImage)
@@ -102,37 +91,24 @@ public final class ImageCacheManager: @unchecked Sendable {
         }
 
         if let task = existingTask {
-            print("Already downloading, waiting for result: \(urlString)")
             return await task.value
         }
 
         // Step 4: Download from network using NetworkService
         let downloadTask = Task<Image?, Never> {
             guard let url = URL(string: urlString) else {
-                print("Invalid URL: \(urlString)")
                 return nil
             }
 
-            print("Starting download: \(urlString)")
 
             // Use NetworkService instead of URLSession directly
             guard let data = try? await self.networkService.downloadData(from: url),
                   let uiImage = await self.decodeUIImage(from: data) else {
-                print("Download or decode failed: \(urlString)")
                 return nil
             }
 
-            print("Downloaded and decoded: \(urlString)")
-
             // Cache the compressed Data (not the decoded UIImage)
             self.cacheData(data, forKey: urlString)
-
-            // Verify it was cached
-            if let verify = self.getCachedData(forKey: urlString) {
-                print("Verified in cache after storing: \(urlString)")
-            } else {
-                print("NOT in cache after storing (this is a bug!): \(urlString)")
-            }
 
             // Save to disk
             await self.diskCache.save(data, forKey: urlString)
@@ -252,8 +228,6 @@ actor DiskCache {
                 try? fileManager.removeItem(at: url)
                 currentSize -= size
             }
-
-            print("Disk cache cleaned up: removed \(totalSize - currentSize) bytes")
         }
     }
 }
