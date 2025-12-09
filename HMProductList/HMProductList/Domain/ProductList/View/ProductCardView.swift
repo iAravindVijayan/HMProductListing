@@ -40,7 +40,7 @@ struct ProductCardView: View {
                 }
             }
             .frame(height: imageHeight)
-            .cornerRadius(8)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
             
             // Product Info
             VStack(alignment: .leading, spacing: 4) {
@@ -57,6 +57,7 @@ struct ProductCardView: View {
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(product.accessibilityLabel)
@@ -67,13 +68,28 @@ struct ProductCardView: View {
         }
     }
     
-    // Adaptive image height based on Dynamic Type
+    // MARK: - Adaptive Image Height
+    
+    /// Image height that adapts to Dynamic Type size
+    /// Smaller images for accessibility sizes to leave more room for text
     private var imageHeight: CGFloat {
-        if dynamicTypeSize.isAccessibilitySize {
+        switch dynamicTypeSize {
+        case .xSmall, .small:
+            return 180
+        case .medium, .large:
+            return 200
+        case .xLarge, .xxLarge, .xxxLarge:
+            return 220
+        case .accessibility1, .accessibility2:
             return 150
+        case .accessibility3, .accessibility4, .accessibility5:
+            return 120
+        @unknown default:
+            return 200
         }
-        return 200
     }
+    
+    // MARK: - Image Loading
     
     private func loadImage() async {
         isLoading = true
@@ -83,7 +99,9 @@ struct ProductCardView: View {
 }
 
 // MARK: - Product Accessibility Extensions
+
 extension Product {
+    /// Complete accessibility label combining all product information
     var accessibilityLabel: String {
         var label = ""
         
@@ -99,13 +117,16 @@ extension Product {
         return label
     }
     
+    /// Accessibility label for product image
     var accessibilityImageLabel: String {
         return UIStrings.productImage.localized + " " + title
     }
 }
 
 // MARK: - Dynamic Type Size Extension
+
 extension DynamicTypeSize {
+    /// Whether this is an accessibility size (larger than standard sizes)
     var isAccessibilitySize: Bool {
         return self >= .accessibility1
     }
