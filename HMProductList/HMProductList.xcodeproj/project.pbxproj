@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		F262169C2EE71143005F7C2D /* CacheManager in Frameworks */ = {isa = PBXBuildFile; productRef = F262169B2EE71143005F7C2D /* CacheManager */; };
 		F26216A12EE71938005F7C2D /* NetworkEngine in Frameworks */ = {isa = PBXBuildFile; productRef = F26216A02EE71938005F7C2D /* NetworkEngine */; };
+		F26216AF2EE7230B005F7C2D /* Localisation in Frameworks */ = {isa = PBXBuildFile; productRef = F26216AE2EE7230B005F7C2D /* Localisation */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +31,7 @@
 			files = (
 				F262169C2EE71143005F7C2D /* CacheManager in Frameworks */,
 				F26216A12EE71938005F7C2D /* NetworkEngine in Frameworks */,
+				F26216AF2EE7230B005F7C2D /* Localisation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -82,6 +84,7 @@
 			packageProductDependencies = (
 				F262169B2EE71143005F7C2D /* CacheManager */,
 				F26216A02EE71938005F7C2D /* NetworkEngine */,
+				F26216AE2EE7230B005F7C2D /* Localisation */,
 			);
 			productName = HMProductList;
 			productReference = F262168C2EE70A1D005F7C2D /* HMProductList.app */;
@@ -113,6 +116,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				F262169A2EE71143005F7C2D /* XCLocalSwiftPackageReference "../DataManager" */,
+				F26216AD2EE7230B005F7C2D /* XCLocalSwiftPackageReference "../Localisation" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F262168D2EE70A1D005F7C2D /* Products */;
@@ -360,6 +364,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../DataManager;
 		};
+		F26216AD2EE7230B005F7C2D /* XCLocalSwiftPackageReference "../Localisation" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../Localisation;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -371,6 +379,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = F262169A2EE71143005F7C2D /* XCLocalSwiftPackageReference "../DataManager" */;
 			productName = NetworkEngine;
+		};
+		F26216AE2EE7230B005F7C2D /* Localisation */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Localisation;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
