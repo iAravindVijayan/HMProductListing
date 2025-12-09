@@ -15,8 +15,9 @@ import NetworkEngine
 public final class ImageCacheManager: @unchecked Sendable {
     public static let shared = ImageCacheManager()
 
-    // Memory cache - stores decoded UIImage for fast access
-    private let memoryCache = NSCache<NSString, UIImage>()
+    // Memory cache - stores compressed JPEG Data for better memory efficiency
+    private let memoryCache = NSCache<NSString, NSData>()
+    private let memoryCacheQueue = DispatchQueue(label: "com.hm.memoryCache", attributes: .concurrent)
 
     // Disk cache
     private let diskCache: DiskCache
@@ -31,8 +32,8 @@ public final class ImageCacheManager: @unchecked Sendable {
     init(networkService: NetworkService = DefaultNetworkService()) {
         self.networkService = networkService
 
-        // Configure memory cache
-        memoryCache.totalCostLimit = 50 * 1024 * 1024 // 50 MB
+        // Configure memory cache - stores compressed Data
+        memoryCache.totalCostLimit = 50 * 1024 * 1024 // 50 MB - can hold ~50 compressed images
         memoryCache.countLimit = 100
 
         // Initialize disk cache
@@ -48,24 +49,50 @@ public final class ImageCacheManager: @unchecked Sendable {
     }
 
     @objc private func handleMemoryWarning() {
-        memoryCache.removeAllObjects()
-        print("Memory cache cleared due to memory warning")
+        memoryCacheQueue.async(flags: .barrier) { [weak self] in
+            self?.memoryCache.removeAllObjects()
+            print("Memory cache cleared due to memory warning")
+        }
+    }
+
+    // Thread-safe memory cache access
+    private func getCachedData(forKey key: String) -> Data? {
+        return memoryCacheQueue.sync {
+            let cached = memoryCache.object(forKey: key as NSString) as Data?
+            if cached != nil {
+                print("Memory cache HIT: \(key)")
+            } else {
+                print("Memory cache MISS: \(key)")
+            }
+            return cached
+        }
+    }
+
+    // Thread-safe memory cache storage - stores compressed Data
+    private func cacheData(_ data: Data, forKey key: String) {
+        memoryCacheQueue.sync(flags: .barrier) { [weak self] in
+            guard let self = self else { return }
+            self.memoryCache.setObject(data as NSData, forKey: key as NSString, cost: data.count)
+            print("Stored in memory cache: \(key) (cost: \(data.count) bytes)")
+        }
     }
 
     // Returns SwiftUI Image for views
     public func loadImage(from urlString: String) async -> Image? {
-        let cacheKey = urlString as NSString
+        print("Loading image: \(urlString)")
 
-        // Step 1: Check memory cache (fastest - decoded UIImage)
-        if let cachedUIImage = memoryCache.object(forKey: cacheKey) {
-            return Image(uiImage: cachedUIImage)
+        // Step 1: Check memory cache for compressed data
+        if let cachedData = getCachedData(forKey: urlString),
+           let uiImage = await decodeUIImage(from: cachedData) {
+            return Image(uiImage: uiImage)
         }
 
         // Step 2: Check disk cache
         if let data = await diskCache.data(forKey: urlString),
            let uiImage = await decodeUIImage(from: data) {
+            print("Image found in diskCache: \(urlString)")
             // Promote to memory cache
-            cacheUIImage(uiImage, forKey: urlString)
+            cacheData(data, forKey: urlString)
             return Image(uiImage: uiImage)
         }
 
@@ -75,23 +102,37 @@ public final class ImageCacheManager: @unchecked Sendable {
         }
 
         if let task = existingTask {
+            print("Already downloading, waiting for result: \(urlString)")
             return await task.value
         }
 
         // Step 4: Download from network using NetworkService
         let downloadTask = Task<Image?, Never> {
             guard let url = URL(string: urlString) else {
+                print("Invalid URL: \(urlString)")
                 return nil
             }
+
+            print("Starting download: \(urlString)")
 
             // Use NetworkService instead of URLSession directly
             guard let data = try? await self.networkService.downloadData(from: url),
                   let uiImage = await self.decodeUIImage(from: data) else {
+                print("Download or decode failed: \(urlString)")
                 return nil
             }
 
-            // Cache the decoded UIImage
-            self.cacheUIImage(uiImage, forKey: urlString)
+            print("Downloaded and decoded: \(urlString)")
+
+            // Cache the compressed Data (not the decoded UIImage)
+            self.cacheData(data, forKey: urlString)
+
+            // Verify it was cached
+            if let verify = self.getCachedData(forKey: urlString) {
+                print("Verified in cache after storing: \(urlString)")
+            } else {
+                print("NOT in cache after storing (this is a bug!): \(urlString)")
+            }
 
             // Save to disk
             await self.diskCache.save(data, forKey: urlString)
@@ -110,18 +151,6 @@ public final class ImageCacheManager: @unchecked Sendable {
         }
 
         return await downloadTask.value
-    }
-
-    // Cache UIImage in memory
-    private func cacheUIImage(_ image: UIImage, forKey key: String) {
-        let cost = calculateImageCost(image)
-        memoryCache.setObject(image, forKey: key as NSString, cost: cost)
-    }
-
-    // Calculate memory cost for NSCache
-    private func calculateImageCost(_ image: UIImage) -> Int {
-        guard let cgImage = image.cgImage else { return 0 }
-        return cgImage.bytesPerRow * cgImage.height
     }
 
     // Decode image on background thread to prevent main thread blocking

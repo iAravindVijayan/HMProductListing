@@ -27,7 +27,8 @@ public final class DefaultNetworkService: NetworkService {
         guard let url = endpoint.url else {
             throw NetworkError.invalidURL
         }
-        
+        print("Calling API: \(url.absoluteString)")
+
         let (data, response) = try await session.data(from: url)
         
         guard let httpResponse = response as? HTTPURLResponse else {

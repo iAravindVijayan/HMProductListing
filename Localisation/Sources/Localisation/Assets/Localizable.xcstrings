@@ -239,6 +239,23 @@
         }
       }
     },
+    "productList.noProductsFound" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No products found"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inga produkter hittades"
+          }
+        }
+      }
+    },
     "productList.productImage" : {
       "extractionState" : "manual",
       "localizations" : {

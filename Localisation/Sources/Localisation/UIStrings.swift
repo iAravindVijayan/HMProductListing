@@ -28,6 +28,7 @@ public enum UIStrings: String {
     case loadingMoreProducts = "productList.loadingMoreProducts"
     case loadingProducts = "productList.loadingProducts"
     case productListTile = "productList.title"
+    case noProductsFound = "productList.noProductsFound"
 
     public var localized: String {
         self.rawValue.localized
